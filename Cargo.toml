@@ -1,0 +1,12 @@
+[package]
+name = "jmx-rust"
+version = "0.1.0"
+authors = ["Stefano Pogliani <stefano@spogliani.net>"]
+description = "JMX client library for Rust"
+keywords = ["jmx"]
+license = "MIT"
+repository = "https://github.com/stefano-pogliani/jmx-rust"
+readme = "README.md"
+
+
+[dependencies]
