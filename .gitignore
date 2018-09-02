@@ -1,6 +1,5 @@
 *.swp
-**/*.rs.bk
-/target
+*.class
 
 /target
 **/*.rs.bk

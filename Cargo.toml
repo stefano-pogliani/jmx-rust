@@ -1,5 +1,5 @@
 [package]
-name = "jmx-rust"
+name = "jmx"
 version = "0.1.0"
 authors = ["Stefano Pogliani <stefano@spogliani.net>"]
 description = "JMX client library for Rust"
@@ -7,6 +7,16 @@ keywords = ["jmx"]
 license = "MIT"
 repository = "https://github.com/stefano-pogliani/jmx-rust"
 readme = "README.md"
+build = "build.rs"
 
 
 [dependencies]
+error-chain = "^0.12.0"
+j4rs = "^0.1.4"
+serde = "^1.0.0"
+serde_derive = "^1.0.0"
+
+
+[build-dependencies]
+# Need j4rs to be built before the build script runs.
+j4rs = "^0.1.4"
