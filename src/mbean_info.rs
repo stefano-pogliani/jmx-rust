@@ -9,7 +9,7 @@ static JMX_MBEAN_ATTRIBUTE_INFO: &'static str = "javax.management.MBeanAttribute
 static JMX_MBEAN_FEATURE_INFO: &'static str = "javax.management.MBeanFeatureInfo";
 
 
-/// TODO
+/// Metadata about an MBean attribute.
 ///
 /// Rust version of `javax.management.MBeanAttributeInfo`
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize, Deserialize)]
@@ -24,7 +24,8 @@ pub struct MBeanAttribute {
 }
 
 impl MBeanAttribute {
-    /// TODO
+    /// Create an `MBeanAttribute` instance from a `javax.management.MBeanAttributeInfo`
+    /// java instance.
     pub fn from_instance(jvm: &Jvm, instance: Instance) -> Result<MBeanAttribute> {
         let is_is = jvm.invoke(&instance, "isIs", &vec![])?;
         let is_is: bool = jvm.to_rust(is_is)?;
@@ -53,7 +54,7 @@ impl MBeanAttribute {
 }
 
 
-/// TODO
+/// Metadata about an MBean.
 ///
 /// Rust version of `javax.management.MBeanInfo`
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize, Deserialize)]
@@ -68,7 +69,7 @@ pub struct MBeanInfo {
 }
 
 impl MBeanInfo {
-    /// TODO
+    /// Create an `MBeanInfo` instance from a `javax.management.MBeanInfo` java instance.
     pub fn from_instance(jvm: &Jvm, instance: Instance) -> Result<MBeanInfo> {
         let attributes = MBeanInfo::attributes_from_instance(jvm, &instance)?;
         let class_name = jvm.invoke(&instance, "getClassName", &vec![])?;

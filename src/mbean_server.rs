@@ -15,7 +15,7 @@ static JMX_QUERY_EXP: &'static str = "javax.management.QueryExp";
 static JMX_SERVICE_URL: &'static str = "javax.management.remote.JMXServiceURL";
 
 
-/// TODO
+/// Interface to a remote MBean server.
 ///
 /// Wrapper around the following Java classes:
 ///
@@ -30,7 +30,7 @@ pub struct MBeanServer {
 }
 
 impl MBeanServer {
-    /// TODO
+    /// Create an `MBeanServer` instance connected to the given service `url`.
     pub fn connect<S>(url: S, jvm: Option<Jvm>) -> Result<MBeanServer>
         where S: Into<String>,
     {
@@ -45,7 +45,7 @@ impl MBeanServer {
         })
     }
 
-    /// TODO
+    /// Get the value of a specific MBean attribute.
     pub fn get_attribute<S1, S2, T>(&self, mbean: S1, attribute: S2) -> Result<T>
         where S1: Into<String>,
               S2: Into<String>,
@@ -61,7 +61,7 @@ impl MBeanServer {
         Ok(self.jvm.to_rust(value)?)
     }
 
-    /// TODO
+    /// Get information about an MBean.
     pub fn get_mbean_info<S>(&self, mbean: S) -> Result<MBeanInfo>
         where S: Into<String>,
     {
@@ -75,7 +75,7 @@ impl MBeanServer {
         MBeanInfo::from_instance(&self.jvm, info)
     }
 
-    /// TODO
+    /// Query for the names of MBeans on the JMX server.
     pub fn query_names<S1, S2>(&self, name: S1, query: S2) -> Result<Vec<String>>
         where S1: Into<String>,
               S2: Into<String>,
@@ -104,13 +104,13 @@ impl MBeanServer {
 }
 
 impl MBeanServer {
-    /// TODO
+    /// Helper to obtain a `javax.management.MBeanServerConnection` instance.
     fn get_connection(jvm: &Jvm, server: &Instance) -> Result<Instance> {
         let connection = jvm.invoke(server, "getMBeanServerConnection", &vec![])?;
         Ok(connection)
     }
 
-    /// TODO
+    /// Create a default JVM if none was provided.
     fn into_jvm(jvm: Option<Jvm>) -> Result<Jvm> {
         if let Some(jvm) = jvm {
             Ok(jvm)
@@ -119,7 +119,7 @@ impl MBeanServer {
         }
     }
 
-    /// TODO
+    /// Helper to obtain a `javax.management.remote.JMXConnectorFactory` instance.
     fn mbean_server(jvm: &Jvm, service_url: Instance) -> Result<Instance> {
         let server = jvm.invoke_static(
             JMX_CONNECTOR_FACTORY, "connect",
@@ -128,7 +128,7 @@ impl MBeanServer {
         Ok(server)
     }
 
-    /// TODO
+    /// Convert the connection string to a `javax.management.remote.JMXServiceURL`.
     fn service_url(jvm: &Jvm, connection: String) -> Result<Instance> {
         let url = jvm.create_instance(
             JMX_SERVICE_URL, &vec![InvocationArg::from(connection)]
