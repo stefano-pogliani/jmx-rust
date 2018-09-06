@@ -10,8 +10,8 @@ use serde_json;
 use serde_json::Value;
 
 use super::MBeanAddress;
+use super::MBeanClient;
 use super::MBeanClientTrait;
-use super::MBeanServer as MBeanClient;
 use super::MBeanInfo;
 use super::Result;
 use super::ResultExt;

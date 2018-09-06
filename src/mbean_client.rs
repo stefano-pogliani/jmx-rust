@@ -23,35 +23,35 @@ use super::util::to_vec;
 ///   * javax.management.remote.JMXServiceURL
 ///   * javax.management.remote.JMXConnectorFactory
 ///   * javax.management.MBeanServerConnection
-pub struct MBeanServer {
+pub struct MBeanClient {
     connection: Instance,
     jvm: Jvm,
     // We access the server from the connection.
     _server: Instance,
 }
 
-impl MBeanServer {
+impl MBeanClient {
     /// Create an `MBeanClient` instance connected to the given address.
-    pub fn connect(address: MBeanAddress) -> Result<MBeanServer> {
-        MBeanServer::connect_with_options(address, MBeanClientOptions::default())
+    pub fn connect(address: MBeanAddress) -> Result<MBeanClient> {
+        MBeanClient::connect_with_options(address, MBeanClientOptions::default())
     }
 
     /// Create an `MBeanClient` instance connected to the given address and options.
     pub fn connect_with_options(
         address: MBeanAddress, options: MBeanClientOptions
-    ) -> Result<MBeanServer> {
-        let jvm = MBeanServer::into_jvm(options.jvm)?;
+    ) -> Result<MBeanClient> {
+        let jvm = MBeanClient::into_jvm(options.jvm)?;
         let service_url = address.for_java(&jvm)?;
-        MBeanServer::connect_service_url(jvm, service_url)
+        MBeanClient::connect_service_url(jvm, service_url)
     }
 }
 
-impl MBeanServer {
-    /// Helper to create an MBeanServer given a service url.
-    fn connect_service_url(jvm: Jvm, service_url: Instance) -> Result<MBeanServer> {
-        let server = MBeanServer::mbean_server(&jvm, service_url)?;
-        let connection = MBeanServer::get_connection(&jvm, &server)?;
-        Ok(MBeanServer {
+impl MBeanClient {
+    /// Helper to create an MBeanClient given a service url.
+    fn connect_service_url(jvm: Jvm, service_url: Instance) -> Result<MBeanClient> {
+        let server = MBeanClient::mbean_server(&jvm, service_url)?;
+        let connection = MBeanClient::get_connection(&jvm, &server)?;
+        Ok(MBeanClient {
             connection,
             jvm,
             _server: server,
@@ -83,7 +83,7 @@ impl MBeanServer {
     }
 }
 
-impl MBeanClientTrait for MBeanServer {
+impl MBeanClientTrait for MBeanClient {
     fn get_attribute<S1, S2, T>(&self, mbean: S1, attribute: S2) -> Result<T>
         where S1: Into<String>,
               S2: Into<String>,

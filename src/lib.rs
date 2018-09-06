@@ -22,7 +22,7 @@ pub use self::errors::ResultExt;
 
 pub use self::base::MBeanAddress;
 pub use self::base::MBeanClientTrait;
-pub use self::mbean_client::MBeanServer;
+pub use self::mbean_client::MBeanClient;
 pub use self::mbean_client::MBeanClientOptions;
 pub use self::mbean_info::MBeanInfo;
 

@@ -14,8 +14,8 @@ use std::thread;
 use std::time::Duration;
 
 use jmx::MBeanAddress;
+use jmx::MBeanClient;
 use jmx::MBeanClientTrait;
-use jmx::MBeanServer;
 
 
 static JMX_PORT: u16 = 1618;
@@ -47,7 +47,7 @@ fn run_test() {
         "service:jmx:rmi://localhost:{}/jndi/rmi://localhost:{}/jmxrmi",
         JMX_PORT, JMX_PORT
     ));
-    let server = MBeanServer::connect(url)
+    let server = MBeanClient::connect(url)
         .expect("Failed to connect to the JMX test server");
 
     // Fetch an MBean information.

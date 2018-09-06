@@ -23,9 +23,9 @@ use j4rs::Jvm;
 use j4rs::new_jvm;
 
 use jmx::MBeanAddress;
+use jmx::MBeanClient;
 use jmx::MBeanClientOptions;
 use jmx::MBeanClientTrait;
-use jmx::MBeanServer;
 use jmx::Result;
 
 
@@ -52,11 +52,11 @@ fn reconnect() {
     let _ = server.kill();
 }
 
-fn run_phase_one(jvm: Jvm) -> MBeanServer {
+fn run_phase_one(jvm: Jvm) -> MBeanClient {
     // Create a connection to the remote JMX server.
     let address = MBeanAddress::address(format!("127.0.0.1:{}", JMX_PORT));
     let options = MBeanClientOptions::default().jvm(jvm);
-    let server = MBeanServer::connect_with_options(address, options)
+    let server = MBeanClient::connect_with_options(address, options)
         .expect("Failed to connect to the JMX test server");
 
     // Fetch some attribute from the server.
@@ -67,7 +67,7 @@ fn run_phase_one(jvm: Jvm) -> MBeanServer {
     server
 }
 
-fn run_phase_two(client: MBeanServer) {
+fn run_phase_two(client: MBeanClient) {
     // Attempt to fetch the attribute again.
     let result: Result<i32> = client.get_attribute("FOO:name=ServerBean", "ThreadCount");
     assert!(result.is_err());
@@ -77,7 +77,7 @@ fn run_phase_three(jvm: Jvm) {
     // Create a connection to the remote JMX server.
     let address = MBeanAddress::address(format!("127.0.0.1:{}", JMX_PORT));
     let options = MBeanClientOptions::default().jvm(jvm);
-    let server = MBeanServer::connect_with_options(address, options)
+    let server = MBeanClient::connect_with_options(address, options)
         .expect("Failed to connect to the JMX test server");
 
     // Fetch some attribute from the server.

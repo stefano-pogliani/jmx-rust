@@ -18,9 +18,9 @@ use std::time::Duration;
 use j4rs::new_jvm;
 
 use jmx::MBeanAddress;
+use jmx::MBeanClient;
 use jmx::MBeanClientOptions;
 use jmx::MBeanClientTrait;
-use jmx::MBeanServer;
 
 
 static JMX_PORT: u16 = 1617;
@@ -58,7 +58,7 @@ fn run_test() {
         JMX_PORT, JMX_PORT
     ));
     let options = MBeanClientOptions::default().jvm(jvm);
-    let server = MBeanServer::connect_with_options(url, options)
+    let server = MBeanClient::connect_with_options(url, options)
         .expect("Failed to connect to the JMX test server");
 
     // Fetch some attributes from the server.
