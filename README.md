@@ -42,14 +42,14 @@ static JMX_PORT: i32 = 1234;
 
 fn main() {
     // Create a connection to the remote JMX server.
-    let url = format!(
+    let url = MBeanAddress::service_url(format!(
         "service:jmx:rmi://localhost:{}/jndi/rmi://localhost:{}/jmxrmi",
         JMX_PORT, JMX_PORT
-    );
-    let server = MBeanServer::connect(url, None)
-        .expect("Failed to connect to the JMX test");
+    ));
+    let client = MBeanClient::connect(url)
+        .expect("Failed to connect to the JMX server");
 
     // Fetch some attribute from the server.
-    let threads: i32 = server.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
+    let threads: i32 = client.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
 }
 ```
