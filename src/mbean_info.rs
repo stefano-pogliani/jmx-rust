@@ -2,11 +2,11 @@ use j4rs::Instance;
 use j4rs::Jvm;
 
 use super::Result;
+
+use super::constants::JMX_MBEAN_ATTRIBUTE_INFO;
+use super::constants::JMX_MBEAN_FEATURE_INFO;
+
 use super::util::to_vec;
-
-
-static JMX_MBEAN_ATTRIBUTE_INFO: &'static str = "javax.management.MBeanAttributeInfo";
-static JMX_MBEAN_FEATURE_INFO: &'static str = "javax.management.MBeanFeatureInfo";
 
 
 /// Metadata about an MBean attribute.

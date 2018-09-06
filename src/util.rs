@@ -5,8 +5,8 @@ use j4rs::Jvm;
 use super::Result;
 
 
-static JAVA_LANG_INTEGER: &'static str = "java.lang.Integer";
-static JAVA_REFLECT_ARRAY: &'static str = "java.lang.reflect.Array";
+use super::constants::JAVA_LANG_INTEGER;
+use super::constants::JAVA_REFLECT_ARRAY;
 
 
 /// Helper function to convert a Java native array into a rust vector.

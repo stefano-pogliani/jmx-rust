@@ -4,8 +4,8 @@
 //!
 //! This test:
 //!
-//!   1. Connects to a JMX server instantiating a default JVM.
-//!   2. Query the MBean server for MBean names.
+//!   1. Connects to a JMX server using a host/port.
+//!   2. Fetch two specific JMX attributes.
 //!
 extern crate jmx;
 
@@ -18,11 +18,11 @@ use jmx::MBeanClientTrait;
 use jmx::MBeanServer;
 
 
-static JMX_PORT: u16 = 1619;
+static JMX_PORT: u16 = 1620;
 
 
 #[test]
-fn mbean_query() {
+fn connect_with_address() {
     // Start the server and wait for it to be up.
     let mut server = Command::new("java")
         .arg("-Dcom.sun.management.jmxremote")
@@ -43,18 +43,13 @@ fn mbean_query() {
 
 fn run_test() {
     // Create a connection to the remote JMX server.
-    let url = MBeanAddress::service_url(format!(
-        "service:jmx:rmi://localhost:{}/jndi/rmi://localhost:{}/jmxrmi",
-        JMX_PORT, JMX_PORT
-    ));
-    let server = MBeanServer::connect(url)
-        .expect("Failed to connect to the JMX test server");
+    let server = MBeanServer::connect(
+        MBeanAddress::address(format!("localhost:{}", JMX_PORT))
+    ).expect("Failed to connect to the JMX test server");
 
-    // Query MBean names.
-    let mut names = server.query_names("java.lang:type=MemoryManager,*", "").unwrap();
-    names.sort();
-    assert_eq!(names, vec![
-        "java.lang:name=CodeCacheManager,type=MemoryManager".to_owned(),
-        "java.lang:name=Metaspace Manager,type=MemoryManager".to_owned(),
-    ]);
+    // Fetch some attributes from the server.
+    let threads: i32 = server.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
+    let schema: String = server.get_attribute("FOO:name=ServerBean", "SchemaName").unwrap();
+    assert_eq!(threads, 16);
+    assert_eq!(schema, "test");
 }

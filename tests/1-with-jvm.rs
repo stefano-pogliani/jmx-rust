@@ -16,14 +16,18 @@ use std::thread;
 use std::time::Duration;
 
 use j4rs::new_jvm;
+
+use jmx::MBeanAddress;
+use jmx::MBeanClientOptions;
+use jmx::MBeanClientTrait;
 use jmx::MBeanServer;
 
 
-static JMX_PORT: i32 = 1617;
+static JMX_PORT: u16 = 1617;
 
 
 #[test]
-fn introduction() {
+fn with_jvm() {
     // Start the server and wait for it to be up.
     let mut server = Command::new("java")
         .arg("-Dcom.sun.management.jmxremote")
@@ -49,12 +53,13 @@ fn run_test() {
     let jvm = new_jvm(vec![], vec![]).unwrap();
 
     // Create a connection to the remote JMX server.
-    let url = format!(
+    let url = MBeanAddress::service_url(format!(
         "service:jmx:rmi://localhost:{}/jndi/rmi://localhost:{}/jmxrmi",
         JMX_PORT, JMX_PORT
-    );
-    let server = MBeanServer::connect(url, Some(jvm))
-        .expect("Failed to connect to the JMX test");
+    ));
+    let options = MBeanClientOptions::default().jvm(jvm);
+    let server = MBeanServer::connect_with_options(url, options)
+        .expect("Failed to connect to the JMX test server");
 
     // Fetch some attributes from the server.
     let threads: i32 = server.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();

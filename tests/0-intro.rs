@@ -13,10 +13,12 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
+use jmx::MBeanAddress;
+use jmx::MBeanClientTrait;
 use jmx::MBeanServer;
 
 
-static JMX_PORT: i32 = 1616;
+static JMX_PORT: u16 = 1616;
 
 
 #[test]
@@ -45,8 +47,8 @@ fn run_test() {
         "service:jmx:rmi://localhost:{}/jndi/rmi://localhost:{}/jmxrmi",
         JMX_PORT, JMX_PORT
     );
-    let server = MBeanServer::connect(url, None)
-        .expect("Failed to connect to the JMX test");
+    let server = MBeanServer::connect(MBeanAddress::service_url(url))
+        .expect("Failed to connect to the JMX test server");
 
     // Fetch some attributes from the server.
     let threads: i32 = server.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
