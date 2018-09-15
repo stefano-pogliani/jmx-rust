@@ -1,5 +1,5 @@
 //!
-//! This test is also an example of reconnection of the client.
+//! This test is also an example of reconnection of the client in a multi-threaded process.
 //!
 //! This test:
 //!
@@ -8,10 +8,9 @@
 //!   3. Kill the server.
 //!   4. Attempts to fetch an attribute from the server (expect to fail).
 //!   5. Re-starts the server.
-//!   6. Reconnects to the server.
+//!   6. Reconnect to the server.
 //!   7. Attempts to fetch an attribute again (expect to fail).
 //!
-extern crate j4rs;
 extern crate jmx;
 
 use std::process::Command;
@@ -19,44 +18,37 @@ use std::process::Child;
 use std::thread;
 use std::time::Duration;
 
-use j4rs::Jvm;
-use j4rs::new_jvm;
-
 use jmx::MBeanAddress;
-use jmx::MBeanClient;
-use jmx::MBeanClientOptions;
 use jmx::MBeanClientTrait;
+use jmx::MBeanThreadedClient;
 use jmx::Result;
 
 
-static JMX_PORT: u16 = 1621;
+static JMX_PORT: u16 = 1623;
 
 
 #[test]
-fn reconnect() {
-    let jvm = new_jvm(vec![], vec![]).unwrap();
-
+fn multi_threaded_reconnect() {
     // Phase one: start a server, get an attribute, stop server.
     let mut server = start_server();
-    let client = run_phase_one(jvm.clone());
+    let client = run_phase_one();
     let _ = server.kill();
 
     // Phase two: attempt to get an attribute.
-    run_phase_two(client);
+    run_phase_two(&client);
 
     // Phase three: re-start the server, get an attribute.
     let mut server = start_server();
-    run_phase_three(jvm);
+    run_phase_three(&client);
 
     // Stop the server once we are done with the test.
     let _ = server.kill();
 }
 
-fn run_phase_one(jvm: Jvm) -> MBeanClient {
+fn run_phase_one() -> MBeanThreadedClient {
     // Create a connection to the remote JMX server.
     let address = MBeanAddress::address(format!("127.0.0.1:{}", JMX_PORT));
-    let options = MBeanClientOptions::default().jvm(jvm);
-    let server = MBeanClient::connect_with_options(address, options)
+    let server = MBeanThreadedClient::connect(address)
         .expect("Failed to connect to the JMX test server");
 
     // Fetch some attribute from the server.
@@ -67,21 +59,20 @@ fn run_phase_one(jvm: Jvm) -> MBeanClient {
     server
 }
 
-fn run_phase_two(client: MBeanClient) {
+fn run_phase_two(client: &MBeanThreadedClient) {
     // Attempt to fetch the attribute again.
     let result: Result<i32> = client.get_attribute("FOO:name=ServerBean", "ThreadCount");
     assert!(result.is_err());
 }
 
-fn run_phase_three(jvm: Jvm) {
-    // Create a connection to the remote JMX server.
+fn run_phase_three(client: &MBeanThreadedClient) {
+    // Re-connect to the remote JMX server.
     let address = MBeanAddress::address(format!("127.0.0.1:{}", JMX_PORT));
-    let options = MBeanClientOptions::default().jvm(jvm);
-    let server = MBeanClient::connect_with_options(address, options)
+    client.reconnect(address)
         .expect("Failed to connect to the JMX test server");
 
     // Fetch some attribute from the server.
-    let threads: i32 = server.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
+    let threads: i32 = client.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
     assert_eq!(threads, 16);
 }
 

@@ -54,7 +54,7 @@ fn run_test() {
     let mut names = server.query_names("java.lang:type=MemoryManager,*", "").unwrap();
     names.sort();
     assert_eq!(names, vec![
-        "java.lang:name=CodeCacheManager,type=MemoryManager".to_owned(),
-        "java.lang:name=Metaspace Manager,type=MemoryManager".to_owned(),
+        "java.lang:type=MemoryManager,name=CodeCacheManager".to_owned(),
+        "java.lang:type=MemoryManager,name=Metaspace Manager".to_owned(),
     ]);
 }

@@ -60,9 +60,7 @@ fn run_test() {
     // Fetch some attributes from the server.
     let t1 = thread::spawn(move || {
         let schema: String = client1.get_attribute("FOO:name=ServerBean", "SchemaName").unwrap();
-        let threads: i32 = client1.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
         assert_eq!(schema, "test");
-        assert_eq!(threads, 16);
     });
     let t2 = thread::spawn(move || {
         // Fetch an MBean information.
@@ -92,12 +90,8 @@ fn run_test() {
         assert_eq!(threads.type_name, "int");
     });
     let t3 = thread::spawn(move || {
-        let mut names = client3.query_names("java.lang:type=MemoryManager,*", "").unwrap();
-        names.sort();
-        assert_eq!(names, vec![
-            "java.lang:name=CodeCacheManager,type=MemoryManager".to_owned(),
-            "java.lang:name=Metaspace Manager,type=MemoryManager".to_owned(),
-        ]);
+        let threads: i32 = client3.get_attribute("FOO:name=ServerBean", "ThreadCount").unwrap();
+        assert_eq!(threads, 16);
     });
     t1.join().unwrap();
     t2.join().unwrap();

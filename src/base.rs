@@ -10,6 +10,7 @@ use super::constants::JMX_SERVICE_URL;
 
 
 /// Address of a remote JMX server.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Serialize, Deserialize)]
 pub enum MBeanAddress {
     Address(String),
     ServiceUrl(String),

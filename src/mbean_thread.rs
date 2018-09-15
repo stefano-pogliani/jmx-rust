@@ -5,12 +5,16 @@ use crossbeam_channel as channel;
 use crossbeam_channel::Receiver;
 use crossbeam_channel::Sender;
 
+use j4rs::Jvm;
+use j4rs::new_jvm;
+
 use serde::de::DeserializeOwned;
 use serde_json;
 use serde_json::Value;
 
 use super::MBeanAddress;
 use super::MBeanClient;
+use super::MBeanClientOptions;
 use super::MBeanClientTrait;
 use super::MBeanInfo;
 use super::Result;
@@ -30,6 +34,9 @@ enum MBeanRequest {
 
     /// Request termination of the background thread.
     Quit,
+
+    /// Request the MBean client to re-connect to the given address with the given options.
+    Reconnect(MBeanAddress, MBeanThreadedClientOptions, Sender<Result<()>>),
 }
 
 
@@ -61,7 +68,15 @@ impl MBeanThreadedClient {
             Some(size) => channel::bounded(size),
         };
         let worker = Builder::new().name("MBeanThreadedClient::worker".into()).spawn(|| {
-            let client = match MBeanClient::connect(address) {
+            let jvm = match new_jvm(vec![], vec![]) {
+                Ok(jvm) => jvm,
+                Err(error) => {
+                    send_client_error.send(error.into());
+                    return;
+                }
+            };
+            let options = options.into_client_options().jvm(jvm.clone());
+            let client = match MBeanClient::connect_with_options(address, options) {
                 Ok(client) => client,
                 Err(error) => {
                     send_client_error.send(error);
@@ -69,7 +84,7 @@ impl MBeanThreadedClient {
                 },
             };
             drop(send_client_error);
-            MBeanThreadedClient::worker_loop(client, worker_receiver);
+            MBeanThreadedClient::worker_loop(jvm, client, worker_receiver);
         })?;
         if let Some(error) = receive_client_error.recv() {
             return Err(error).chain_err(|| "Background thread failed to create JVM");
@@ -79,11 +94,29 @@ impl MBeanThreadedClient {
             worker: Some(worker),
         })
     }
+
+    /// Request the MBean client to re-connect to the given address.
+    pub fn reconnect(&self, address: MBeanAddress) -> Result<()> {
+        self.reconnect_with_options(address, MBeanThreadedClientOptions::default())
+    }
+
+    /// Request the MBean client to re-connect to the given address with the given options.
+    pub fn reconnect_with_options(
+        &self, address: MBeanAddress, options: MBeanThreadedClientOptions
+    ) -> Result<()> {
+        let (sender, receiver) = channel::bounded(1);
+        self.send_to_worker.send(MBeanRequest::Reconnect(address, options, sender));
+        match receiver.recv() {
+            None => Err("Background worker did not send a response".into()),
+            Some(result) => result,
+        }
+    }
 }
 
 impl MBeanThreadedClient {
     /// Wait for requests from other threads and process them.
-    fn worker_loop(client: MBeanClient, receiver: Receiver<MBeanRequest>) {
+    fn worker_loop(jvm: Jvm, client: MBeanClient, receiver: Receiver<MBeanRequest>) {
+        let mut client = client;
         for request in receiver {
             match request {
                 MBeanRequest::GetAttribute(mbean, attribute, sender) => {
@@ -99,6 +132,16 @@ impl MBeanThreadedClient {
                     sender.send(response);
                 },
                 MBeanRequest::Quit => break,
+                MBeanRequest::Reconnect(address, options, sender) => {
+                    let options = options.into_client_options().jvm(jvm.clone());
+                    match MBeanClient::connect_with_options(address, options) {
+                        Err(error) => sender.send(Err(error)),
+                        Ok(new_client) => {
+                            client = new_client;
+                            sender.send(Ok(()));
+                        }
+                    };
+                },
             };
         }
     }
@@ -170,6 +213,13 @@ impl MBeanThreadedClientOptions {
     pub fn requests_buffer_size(mut self, size: usize) -> Self {
         self.reqs_buffer = Some(size);
         self
+    }
+}
+
+impl MBeanThreadedClientOptions {
+    /// Converts multi-threaded connection options to MBeanClientOptions.
+    fn into_client_options(self) -> MBeanClientOptions {
+        MBeanClientOptions::default()
     }
 }
 

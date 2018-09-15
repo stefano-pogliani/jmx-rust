@@ -1,6 +1,6 @@
 [package]
 name = "jmx"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Stefano Pogliani <stefano@spogliani.net>"]
 description = "JMX client library for Rust"
 keywords = ["jmx"]
@@ -28,4 +28,8 @@ serde_json = { version = "^1.0.26", optional = true }
 
 [[test]]
 name = "6-multi-threaded"
+required-features = ["thread-support"]
+
+[[test]]
+name = "7-multi-threaded-reconnect"
 required-features = ["thread-support"]
