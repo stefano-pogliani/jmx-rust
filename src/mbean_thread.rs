@@ -198,6 +198,7 @@ impl MBeanClientTrait for MBeanThreadedClient {
 
 
 /// Additional `MBeanThreadedClient` connection options.
+#[derive(Clone)]
 pub struct MBeanThreadedClientOptions {
     reqs_buffer: Option<usize>,
 }

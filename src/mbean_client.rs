@@ -141,6 +141,7 @@ impl MBeanClientTrait for MBeanClient {
 
 
 /// Additional `MBeanClient` connection options.
+#[derive(Clone)]
 pub struct MBeanClientOptions {
     jvm: Option<Jvm>,
 }
