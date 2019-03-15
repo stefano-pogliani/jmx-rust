@@ -80,6 +80,10 @@ pub enum ErrorKind {
     WorkerNoResponse,
 
     #[cfg(feature = "thread-support")]
+    #[fail(display = "could not send request to background worker")]
+    WorkerNoSend,
+
+    #[cfg(feature = "thread-support")]
     #[fail(display = "could not spawn background worker thread")]
     WorkerSpawn,
 }

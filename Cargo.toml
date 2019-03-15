@@ -18,7 +18,7 @@ thread-support = ["crossbeam-channel", "serde_json"]
 
 
 [dependencies]
-crossbeam-channel = { version = "^0.2.4", optional = true }
+crossbeam-channel = { version = "^0.3.8", optional = true }
 failure = "^0.1.5"
 j4rs = "^0.5.1"
 serde = "^1.0.0"

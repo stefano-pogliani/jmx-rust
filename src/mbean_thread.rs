@@ -64,29 +64,41 @@ impl MBeanThreadWorker {
                 MBeanRequest::GetAttribute(mbean, attribute, sender) => {
                     let response: Result<Value> = self.client()
                         .and_then(|c| c.get_attribute(mbean, attribute));
-                    sender.send(response);
+                    if let Err(_) = sender.send(response) {
+                        return;
+                    }
                 },
                 MBeanRequest::GetMBeanInfo(mbean, sender) => {
                     let response = self.client().and_then(|c| c.get_mbean_info(mbean));
-                    sender.send(response);
+                    if let Err(_) = sender.send(response) {
+                        return;
+                    }
                 },
                 MBeanRequest::QueryNames(name, query, sender) => {
                     let response = self.client().and_then(|c| c.query_names(name, query));
-                    sender.send(response);
+                    if let Err(_) = sender.send(response) {
+                        return;
+                    }
                 },
                 MBeanRequest::Quit => break,
                 MBeanRequest::Reconnect(address, options, sender) => {
                     if options.skip_connect {
                         self.client = None;
-                        sender.send(Ok(()));
+                        if let Err(_) = sender.send(Ok(())) {
+                            return;
+                        }
                     } else {
-                        match MBeanClient::connect_with_options(address, options.into()) {
+                        let client = MBeanClient::connect_with_options(address, options.into());
+                        let sent = match client {
                             Err(error) => sender.send(Err(error)),
                             Ok(new_client) => {
                                 self.client = Some(new_client);
-                                sender.send(Ok(()));
+                                sender.send(Ok(()))
                             }
                         };
+                        if let Err(_) = sent {
+                            return;
+                        }
                     }
                 },
             };
@@ -145,17 +157,20 @@ impl MBeanThreadedClient {
         &self, address: MBeanAddress, options: MBeanThreadedClientOptions
     ) -> Result<()> {
         let (sender, receiver) = channel::bounded(1);
-        self.send_to_worker.send(MBeanRequest::Reconnect(address, options, sender));
+        let request = MBeanRequest::Reconnect(address, options, sender);
+        if let Err(_) = self.send_to_worker.send(request) {
+            return Err(ErrorKind::WorkerNoSend.into());
+        }
         match receiver.recv() {
-            None => Err(ErrorKind::WorkerNoResponse.into()),
-            Some(result) => result,
+            Err(_) => Err(ErrorKind::WorkerNoResponse.into()),
+            Ok(result) => result,
         }
     }
 }
 
 impl Drop for MBeanThreadedClient {
     fn drop(&mut self) {
-        self.send_to_worker.send(MBeanRequest::Quit);
+        let _err = self.send_to_worker.send(MBeanRequest::Quit);
         let _err = self.worker.take().unwrap().join();
     }
 }
@@ -167,12 +182,13 @@ impl MBeanClientTrait for MBeanThreadedClient {
               T: DeserializeOwned,
     {
         let (sender, receiver) = channel::bounded(1);
-        self.send_to_worker.send(MBeanRequest::GetAttribute(
-            mbean.into(), attribute.into(), sender
-        ));
+        let request = MBeanRequest::GetAttribute(mbean.into(), attribute.into(), sender);
+        if let Err(_) = self.send_to_worker.send(request) {
+            return Err(ErrorKind::WorkerNoSend.into());
+        }
         let value: Value = match receiver.recv() {
-            None => Err(ErrorKind::WorkerNoResponse.into()),
-            Some(result) => result,
+            Err(_) => Err(ErrorKind::WorkerNoResponse.into()),
+            Ok(result) => result,
         }?;
         let value: T = serde_json::from_value(value).with_context(|_| ErrorKind::WorkerDecode)?;
         Ok(value)
@@ -182,10 +198,13 @@ impl MBeanClientTrait for MBeanThreadedClient {
         where S: Into<String>,
     {
         let (sender, receiver) = channel::bounded(1);
-        self.send_to_worker.send(MBeanRequest::GetMBeanInfo(mbean.into(), sender));
+        let request = MBeanRequest::GetMBeanInfo(mbean.into(), sender);
+        if let Err(_) = self.send_to_worker.send(request) {
+            return Err(ErrorKind::WorkerNoSend.into());
+        }
         match receiver.recv() {
-            None => Err(ErrorKind::WorkerNoResponse.into()),
-            Some(result) => result,
+            Err(_) => Err(ErrorKind::WorkerNoResponse.into()),
+            Ok(result) => result,
         }
     }
 
@@ -194,10 +213,13 @@ impl MBeanClientTrait for MBeanThreadedClient {
               S2: Into<String>,
     {
         let (sender, receiver) = channel::bounded(1);
-        self.send_to_worker.send(MBeanRequest::QueryNames(name.into(), query.into(), sender));
+        let request = MBeanRequest::QueryNames(name.into(), query.into(), sender);
+        if let Err(_) = self.send_to_worker.send(request) {
+            return Err(ErrorKind::WorkerNoSend.into());
+        }
         match receiver.recv() {
-            None => Err(ErrorKind::WorkerNoResponse.into()),
-            Some(result) => result,
+            Err(_) => Err(ErrorKind::WorkerNoResponse.into()),
+            Ok(result) => result,
         }
     }
 }

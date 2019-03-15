@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - **BREAKING**: Pass `JvmBuilder` to `MBeanClient` options.
 - **BREAKING**: Stop sharing `Jvm` instances across clients.
 - **BREAKING**: Upgrade to `failure` for errors.
-- TODO: Upgrade `crossbeam-channel` to version 0.3.8.
+- Upgrade `crossbeam-channel` to version 0.3.8.
 - Upgrade `j4rs` to version 0.5.1.
 
 ## [0.1.3] - 2018-09-17
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 [Unreleased]: https://github.com/replicante-io/replicante/compare/v0.2.0...HEAD
-[0.1.3]: https://github.com/replicante-io/replicante/compare/v0.1.3...v0.2.0
+[0.2.0]: https://github.com/replicante-io/replicante/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/replicante-io/replicante/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/replicante-io/replicante/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/replicante-io/replicante/compare/v0.1.0...v0.1.1
