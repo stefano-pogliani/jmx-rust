@@ -19,9 +19,6 @@ use std::process::Child;
 use std::thread;
 use std::time::Duration;
 
-use j4rs::Jvm;
-use j4rs::new_jvm;
-
 use jmx::MBeanAddress;
 use jmx::MBeanClient;
 use jmx::MBeanClientOptions;
@@ -34,11 +31,9 @@ static JMX_PORT: u16 = 1621;
 
 #[test]
 fn reconnect() {
-    let jvm = new_jvm(vec![], vec![]).unwrap();
-
     // Phase one: start a server, get an attribute, stop server.
     let mut server = start_server();
-    let client = run_phase_one(jvm.clone());
+    let client = run_phase_one();
     let _ = server.kill();
 
     // Phase two: attempt to get an attribute.
@@ -46,16 +41,16 @@ fn reconnect() {
 
     // Phase three: re-start the server, get an attribute.
     let mut server = start_server();
-    run_phase_three(jvm);
+    run_phase_three();
 
     // Stop the server once we are done with the test.
     let _ = server.kill();
 }
 
-fn run_phase_one(jvm: Jvm) -> MBeanClient {
+fn run_phase_one() -> MBeanClient {
     // Create a connection to the remote JMX server.
     let address = MBeanAddress::address(format!("127.0.0.1:{}", JMX_PORT));
-    let options = MBeanClientOptions::default().jvm(jvm);
+    let options = MBeanClientOptions::default();
     let server = MBeanClient::connect_with_options(address, options)
         .expect("Failed to connect to the JMX test server");
 
@@ -73,10 +68,10 @@ fn run_phase_two(client: MBeanClient) {
     assert!(result.is_err());
 }
 
-fn run_phase_three(jvm: Jvm) {
+fn run_phase_three() {
     // Create a connection to the remote JMX server.
     let address = MBeanAddress::address(format!("127.0.0.1:{}", JMX_PORT));
-    let options = MBeanClientOptions::default().jvm(jvm);
+    let options = MBeanClientOptions::default();
     let server = MBeanClient::connect_with_options(address, options)
         .expect("Failed to connect to the JMX test server");
 

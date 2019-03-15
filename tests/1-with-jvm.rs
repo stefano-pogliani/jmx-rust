@@ -15,7 +15,7 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
-use j4rs::new_jvm;
+use j4rs::JvmBuilder;
 
 use jmx::MBeanAddress;
 use jmx::MBeanClient;
@@ -50,14 +50,14 @@ fn run_test() {
     // Create a new JVM instance.
     // Customise the instance as desired.
     // See: https://github.com/astonbitecode/j4rs/blob/master/rust/src/lib.rs#L44
-    let jvm = new_jvm(vec![], vec![]).unwrap();
+    let jvm = JvmBuilder::new();
 
     // Create a connection to the remote JMX server.
     let url = MBeanAddress::service_url(format!(
         "service:jmx:rmi://localhost:{}/jndi/rmi://localhost:{}/jmxrmi",
         JMX_PORT, JMX_PORT
     ));
-    let options = MBeanClientOptions::default().jvm(jvm);
+    let options = MBeanClientOptions::default().builder(jvm);
     let server = MBeanClient::connect_with_options(url, options)
         .expect("Failed to connect to the JMX test server");
 

@@ -50,7 +50,7 @@ fn run_test() {
     // Create a connection to the remote JMX server.
     let address = MBeanAddress::address(format!("localhost:{}", JMX_PORT));
     let options = MBeanThreadedClientOptions::default().skip_connect(true);
-    let client = MBeanThreadedClient::connect_with_options(address.clone(), options.clone())
+    let client = MBeanThreadedClient::connect_with_options(address.clone(), options)
         .expect("Failed to create JMX client");
 
     // Ecpect request to fail.
@@ -66,6 +66,7 @@ fn run_test() {
     assert_eq!(threads, 16);
 
     // Disconnect from the server.
+    let options = MBeanThreadedClientOptions::default().skip_connect(true);
     client.reconnect_with_options(address, options)
         .expect("Failed to disconnect from the server");
 

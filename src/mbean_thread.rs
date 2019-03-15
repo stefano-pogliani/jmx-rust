@@ -4,22 +4,19 @@ use std::thread::JoinHandle;
 use crossbeam_channel as channel;
 use crossbeam_channel::Receiver;
 use crossbeam_channel::Sender;
-
-use j4rs::Jvm;
-use j4rs::new_jvm;
+use failure::ResultExt;
 
 use serde::de::DeserializeOwned;
 use serde_json;
 use serde_json::Value;
 
+use super::ErrorKind;
 use super::MBeanAddress;
 use super::MBeanClient;
 use super::MBeanClientOptions;
 use super::MBeanClientTrait;
 use super::MBeanInfo;
-use super::Error;
 use super::Result;
-use super::ResultExt;
 
 
 /// Encode requests sent to the background `MBeanClient`.
@@ -44,22 +41,20 @@ enum MBeanRequest {
 /// Encapsulate the logic and state of the async worker thread.
 struct MBeanThreadWorker {
     client: Option<MBeanClient>,
-    jvm: Jvm,
     receiver: Receiver<MBeanRequest>,
 }
 
 impl MBeanThreadWorker {
-    fn new(jvm: Jvm, receiver: Receiver<MBeanRequest>) -> MBeanThreadWorker {
+    fn new(receiver: Receiver<MBeanRequest>) -> MBeanThreadWorker {
         MBeanThreadWorker {
             client: None,
-            jvm,
             receiver,
         }
     }
 
     /// Access the MBeanClient, if one is available.
     fn client(&self) -> Result<&MBeanClient> {
-        self.client.as_ref().ok_or_else(|| "The JMX client is not connected".into())
+        self.client.as_ref().ok_or_else(|| ErrorKind::NotConnected.into())
     }
 
     /// Wait for requests from other threads and process them.
@@ -85,8 +80,7 @@ impl MBeanThreadWorker {
                         self.client = None;
                         sender.send(Ok(()));
                     } else {
-                        let options = options.into_client_options().jvm(self.jvm.clone());
-                        match MBeanClient::connect_with_options(address, options) {
+                        match MBeanClient::connect_with_options(address, options.into()) {
                             Err(error) => sender.send(Err(error)),
                             Ok(new_client) => {
                                 self.client = Some(new_client);
@@ -123,27 +117,14 @@ impl MBeanThreadedClient {
     pub fn connect_with_options(
         address: MBeanAddress, options: MBeanThreadedClientOptions
     ) -> Result<MBeanThreadedClient> {
-        let (send_client_error, receive_client_error): (Sender<Error>, Receiver<Error>) =
-            channel::bounded(1);
         let (send_to_worker, worker_receiver) = match options.reqs_buffer {
             None => channel::unbounded(),
             Some(size) => channel::bounded(size),
         };
         let worker = Builder::new().name("MBeanThreadedClient::worker".into()).spawn(|| {
-            let jvm = match new_jvm(vec![], vec![]) {
-                Ok(jvm) => jvm,
-                Err(error) => {
-                    send_client_error.send(error.into());
-                    return;
-                }
-            };
-            drop(send_client_error);
-            let mut worker = MBeanThreadWorker::new(jvm, worker_receiver);
+            let mut worker = MBeanThreadWorker::new(worker_receiver);
             worker.work();
-        })?;
-        if let Some(error) = receive_client_error.recv() {
-            return Err(error).chain_err(|| "Background thread failed to create JVM");
-        }
+        }).with_context(|_| ErrorKind::WorkerSpawn)?;
         let client = MBeanThreadedClient {
             send_to_worker,
             worker: Some(worker),
@@ -166,7 +147,7 @@ impl MBeanThreadedClient {
         let (sender, receiver) = channel::bounded(1);
         self.send_to_worker.send(MBeanRequest::Reconnect(address, options, sender));
         match receiver.recv() {
-            None => Err("Background worker did not send a response".into()),
+            None => Err(ErrorKind::WorkerNoResponse.into()),
             Some(result) => result,
         }
     }
@@ -190,10 +171,10 @@ impl MBeanClientTrait for MBeanThreadedClient {
             mbean.into(), attribute.into(), sender
         ));
         let value: Value = match receiver.recv() {
-            None => Err("Background worker did not send a response".into()),
+            None => Err(ErrorKind::WorkerNoResponse.into()),
             Some(result) => result,
         }?;
-        let value: T = serde_json::from_value(value)?;
+        let value: T = serde_json::from_value(value).with_context(|_| ErrorKind::WorkerDecode)?;
         Ok(value)
     }
 
@@ -203,7 +184,7 @@ impl MBeanClientTrait for MBeanThreadedClient {
         let (sender, receiver) = channel::bounded(1);
         self.send_to_worker.send(MBeanRequest::GetMBeanInfo(mbean.into(), sender));
         match receiver.recv() {
-            None => Err("Background worker did not send a response".into()),
+            None => Err(ErrorKind::WorkerNoResponse.into()),
             Some(result) => result,
         }
     }
@@ -215,7 +196,7 @@ impl MBeanClientTrait for MBeanThreadedClient {
         let (sender, receiver) = channel::bounded(1);
         self.send_to_worker.send(MBeanRequest::QueryNames(name.into(), query.into(), sender));
         match receiver.recv() {
-            None => Err("Background worker did not send a response".into()),
+            None => Err(ErrorKind::WorkerNoResponse.into()),
             Some(result) => result,
         }
     }
@@ -223,13 +204,12 @@ impl MBeanClientTrait for MBeanThreadedClient {
 
 
 /// Additional `MBeanThreadedClient` connection options.
-#[derive(Clone)]
 pub struct MBeanThreadedClientOptions {
     reqs_buffer: Option<usize>,
     skip_connect: bool,
 }
 
-impl MBeanThreadedClientOptions {
+impl<'a> MBeanThreadedClientOptions {
     /// Clear the requests buffer size so unlimited requests are buffered.
     pub fn requests_buffer_unlimited(mut self) -> Self {
         self.reqs_buffer = None;
@@ -248,9 +228,8 @@ impl MBeanThreadedClientOptions {
     }
 }
 
-impl MBeanThreadedClientOptions {
-    /// Converts multi-threaded connection options to MBeanClientOptions.
-    fn into_client_options(self) -> MBeanClientOptions {
+impl<'a> From<MBeanThreadedClientOptions> for MBeanClientOptions<'a> {
+    fn from(_: MBeanThreadedClientOptions) -> MBeanClientOptions<'a> {
         MBeanClientOptions::default()
     }
 }

@@ -7,14 +7,8 @@ This library allows querying Java JMX attributes from a rust project.
 ## Building
 The `jmx-rust` crate is based off of the `j4rs` crate.
 
-The `j4rs` crate needs `JAVA_HOME` variable to be set to the install path of the JDK for builds
-and the `LD_LIBRARY_PATH` to the directory containing `libjvm.so`.
+As of version 0.5.1 `j4rs` is able to locate the JDK automatically.
 
-```bash
-# For Fedora 28:
-export JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.181-7.b13.fc28.x86_64"
-export LD_LIBRARY_PATH="${JAVA_HOME}/jre/lib/amd64/server:$LD_LIBRARY_PATH"
-```
 
 ### Tests
 Tests work but starting a test JMX server located under `tests/jmxserver`.
@@ -29,7 +23,7 @@ javac TestServer.java
 cd ../..
 
 export PATH="/path/to/java/bin:$PATH"
-cargo test
+cargo test --features thread-support
 ```
 
 

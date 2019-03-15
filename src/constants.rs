@@ -1,4 +1,5 @@
 pub static JAVA_LANG_INTEGER: &'static str = "java.lang.Integer";
+pub static JAVA_LANG_OBJECT: &'static str = "java.lang.Object";
 pub static JAVA_REFLECT_ARRAY: &'static str = "java.lang.reflect.Array";
 
 pub static JMX_CONNECTOR_FACTORY: &'static str = "javax.management.remote.JMXConnectorFactory";
