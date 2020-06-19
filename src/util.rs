@@ -6,6 +6,7 @@ use j4rs::Jvm;
 use super::ErrorKind;
 use super::Result;
 
+use std::convert::TryFrom;
 
 use super::constants::JAVA_LANG_INTEGER;
 use super::constants::JAVA_LANG_OBJECT;
@@ -25,13 +26,13 @@ pub fn to_vec(jvm: &Jvm, instance: Instance, class: &str) -> Result<Vec<Instance
     let instance_for_len = jvm.clone_instance(&instance).with_context(|_| ErrorKind::JavaClone)?;
     let length = jvm.invoke_static(
         JAVA_REFLECT_ARRAY, "getLength",
-        &vec![InvocationArg::from(instance_for_len)]
+        &vec![InvocationArg::from(instance_for_len)],
     ).with_context(|_| ErrorKind::JavaInvokeStatic(JAVA_REFLECT_ARRAY, "getLength"))?;
     let length: i32 = jvm.to_rust(length).with_context(|_| ErrorKind::RustCast("i32"))?;
     let mut vector = Vec::new();
     for idx in 0..length {
         let idx = jvm.create_instance(
-            JAVA_LANG_INTEGER, &vec![InvocationArg::from(format!("{}", idx))]
+            JAVA_LANG_INTEGER, &vec![InvocationArg::try_from(format!("{}", idx))?],
         ).with_context(|_| ErrorKind::JavaCreateInstance(JAVA_LANG_INTEGER))?;
         let idx = jvm.invoke(&idx, "intValue", &vec![])
             .with_context(|_| ErrorKind::JavaInvoke(JAVA_LANG_INTEGER.to_string(), "intValue"))?;
@@ -39,7 +40,7 @@ pub fn to_vec(jvm: &Jvm, instance: Instance, class: &str) -> Result<Vec<Instance
             .with_context(|_| ErrorKind::JavaClone)?;
         let value = jvm.invoke_static(
             JAVA_REFLECT_ARRAY, "get",
-            &vec![InvocationArg::from(instance_for_get), InvocationArg::from(idx)]
+            &vec![InvocationArg::from(instance_for_get), InvocationArg::from(idx)],
         ).with_context(|_| ErrorKind::JavaInvokeStatic(JAVA_REFLECT_ARRAY, "get"))?;
         let value = jvm.cast(&value, class)
             .with_context(|_| ErrorKind::JavaCast(class.to_string()))?;

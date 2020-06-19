@@ -4,6 +4,7 @@ use j4rs::InvocationArg;
 use j4rs::Jvm;
 use serde::de::DeserializeOwned;
 
+use std::convert::TryFrom;
 use super::ErrorKind;
 use super::MBeanInfo;
 use super::Result;
@@ -37,11 +38,11 @@ impl MBeanAddress {
                     "service:jmx:rmi://{}/jndi/rmi://{}/jmxrmi",
                     address, address
                 );
-                jvm.create_instance(JMX_SERVICE_URL, &vec![InvocationArg::from(url)])
+                jvm.create_instance(JMX_SERVICE_URL, &vec![InvocationArg::try_from(url)?])
                     .with_context(|_| ErrorKind::JavaCreateInstance(JMX_SERVICE_URL))?
             },
             MBeanAddress::ServiceUrl(url) => jvm.create_instance(
-                JMX_SERVICE_URL, &vec![InvocationArg::from(url)]
+                JMX_SERVICE_URL, &vec![InvocationArg::try_from(url)?]
             ).with_context(|_| ErrorKind::JavaCreateInstance(JMX_SERVICE_URL))?,
         };
         Ok(instance)
