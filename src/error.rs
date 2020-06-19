@@ -66,7 +66,7 @@ pub enum ErrorKind {
     #[fail(display = "could not invoke instance method '{}.{}'", _0, _1)]
     JavaInvoke(String, &'static str),
 
-    #[fail(display = "could not parse invocation arg '{}'", _0)]
+    #[fail(display = "j4rs thrown an error '{}'", _0)]
     J4RsError(J4RsError),
 
     #[fail(display = "could not invoke static method '{}.{}'", _0, _1)]
