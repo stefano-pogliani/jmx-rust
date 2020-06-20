@@ -17,7 +17,7 @@ impl Error {
 }
 
 impl Fail for Error {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.0.cause()
     }
 
@@ -66,7 +66,7 @@ pub enum ErrorKind {
     #[fail(display = "could not invoke instance method '{}.{}'", _0, _1)]
     JavaInvoke(String, &'static str),
 
-    #[fail(display = "j4rs thrown an error '{}'", _0)]
+    #[fail(display = "j4rs has thrown an error '{}'", _0)]
     J4RsError(J4RsError),
 
     #[fail(display = "could not invoke static method '{}.{}'", _0, _1)]
