@@ -3,6 +3,7 @@ use std::fmt;
 use failure::Backtrace;
 use failure::Context;
 use failure::Fail;
+use j4rs::errors::J4RsError;
 
 
 /// Error information returned by functions in case of errors.
@@ -43,6 +44,12 @@ impl From<ErrorKind> for Error {
     }
 }
 
+impl From<J4RsError> for Error {
+    fn from(e: J4RsError) -> Error {
+        Error(Context::new(ErrorKind::J4RsError(e)))
+    }
+}
+
 
 /// Exhaustive list of possible errors emitted by this crate.
 #[derive(Debug, Fail)]
@@ -58,6 +65,9 @@ pub enum ErrorKind {
 
     #[fail(display = "could not invoke instance method '{}.{}'", _0, _1)]
     JavaInvoke(String, &'static str),
+
+    #[fail(display = "j4rs thrown an error '{}'", _0)]
+    J4RsError(J4RsError),
 
     #[fail(display = "could not invoke static method '{}.{}'", _0, _1)]
     JavaInvokeStatic(&'static str, &'static str),

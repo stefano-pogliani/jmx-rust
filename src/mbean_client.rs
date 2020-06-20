@@ -15,6 +15,8 @@ use super::constants::JMX_CONNECTOR_FACTORY;
 use super::constants::JMX_OBJECT_NAME;
 use super::constants::JMX_QUERY_EXP;
 
+use std::convert::TryFrom;
+
 use super::util::to_vec;
 
 
@@ -85,11 +87,11 @@ impl MBeanClientTrait for MBeanClient {
               T: DeserializeOwned,
     {
         let object_name = self.jvm.create_instance(
-            JMX_OBJECT_NAME, &vec![InvocationArg::from(mbean.into())]
+            JMX_OBJECT_NAME, &vec![InvocationArg::try_from(mbean.into())?]
         ).with_context(|_| ErrorKind::JavaCreateInstance(JMX_OBJECT_NAME))?;
         let value = self.jvm.invoke(
             &self.connection, "getAttribute",
-            &vec![InvocationArg::from(object_name), InvocationArg::from(attribute.into())]
+            &vec![InvocationArg::from(object_name), InvocationArg::try_from(attribute.into())?]
         ).with_context(
             |_| ErrorKind::JavaInvoke(self.connection.class_name().to_string(), "getAttribute")
         )?;
@@ -101,7 +103,7 @@ impl MBeanClientTrait for MBeanClient {
         where S: Into<String>,
     {
         let object_name = self.jvm.create_instance(
-            JMX_OBJECT_NAME, &vec![InvocationArg::from(mbean.into())]
+            JMX_OBJECT_NAME, &vec![InvocationArg::try_from(mbean.into())?]
         ).with_context(|_| ErrorKind::JavaCreateInstance(JMX_OBJECT_NAME))?;
         let info = self.jvm.invoke(
             &self.connection, "getMBeanInfo",
@@ -117,10 +119,10 @@ impl MBeanClientTrait for MBeanClient {
               S2: Into<String>,
     {
         let name = self.jvm.create_instance(
-            JMX_OBJECT_NAME, &vec![InvocationArg::from(name.into())]
+            JMX_OBJECT_NAME, &vec![InvocationArg::try_from(name.into())?]
         ).with_context(|_| ErrorKind::JavaCreateInstance(JMX_OBJECT_NAME))?;
         let query = self.jvm.create_instance(
-            JMX_OBJECT_NAME, &vec![InvocationArg::from(query.into())]
+            JMX_OBJECT_NAME, &vec![InvocationArg::try_from(query.into())?]
         ).with_context(|_| ErrorKind::JavaCreateInstance(JMX_OBJECT_NAME))?;
         let query = self.jvm.cast(&query, JMX_QUERY_EXP)
             .with_context(|_| ErrorKind::JavaCast(JMX_QUERY_EXP.to_string()))?;
